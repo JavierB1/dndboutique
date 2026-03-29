@@ -148,12 +148,17 @@ onSnapshot(clientesRef, (snapshot) => {
     actualizarNotificaciones();
 });
 
-// --- ACCIONES GLOBALES (VINCULADAS A WINDOW) ---
+// --- ACCIONES GLOBALES (VINCULADAS A WINDOW PARA QUE FUNCIONEN LOS BOTONES) ---
 window.toggleModal = () => {
     editandoID = null;
     document.getElementById('form-cliente').reset();
     document.getElementById('modal-titulo').innerText = "Registrar Venta";
     document.getElementById('modalCliente').classList.toggle('hidden');
+};
+
+window.toggleNotificaciones = () => {
+    const panel = document.getElementById('panel-notif');
+    panel.classList.toggle('hidden');
 };
 
 window.abrirEditor = (id) => {
@@ -197,6 +202,8 @@ window.eliminarCliente = async (id) => {
     }
 };
 
+window.renderizarTabla = renderizarTabla; // Para el buscador y filtros
+
 // --- ENVÍO DEL FORMULARIO ---
 document.getElementById('form-cliente').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -230,5 +237,5 @@ document.getElementById('form-cliente').addEventListener('submit', async (e) => 
     }
 });
 
-// Refresco visual de tiempos
+// Refresco visual de tiempos cada minuto
 setInterval(() => renderizarTabla(), 60000);
