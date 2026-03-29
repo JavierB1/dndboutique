@@ -2,29 +2,43 @@
 
 body { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-@keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+/* Animaciones suaves */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.scale-in { animation: scaleIn 0.2s ease-out; }
+.animate-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
 
+/* Ocultar flechas en inputs de número */
 input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-.btn-ws {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 42px;
-    height: 42px;
-    background-color: #ecfdf5;
-    color: #059669;
-    border-radius: 12px;
-    transition: all 0.2s;
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-.btn-ws:hover { background-color: #059669; color: white; }
+/* Scrollbar personalizado para el panel de notificaciones */
+#panel-notif div::-webkit-scrollbar {
+    width: 5px;
+}
 
-#panel-notif::-webkit-scrollbar { width: 4px; }
-#panel-notif::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+#panel-notif div::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#panel-notif div::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+/* Efectos de Hover para botones de acción */
+button:active {
+    transform: scale(0.95);
+}
+
+/* Shadow especial para el modal */
+#modalCliente > div {
+    box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25);
+}
