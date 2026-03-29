@@ -55,13 +55,11 @@ window.cambiarEstado = async (id, nuevoEstado) => {
     } catch (e) { console.error(e); }
 };
 
-// Esta función es la que hace que el "Check" de la notificación resetee el tiempo
 window.marcarSeguimiento = async (id) => {
     try {
         await updateDoc(doc(db, "clientes", id), { 
             fechaCambioEstado: Date.now() 
         });
-        // La notificación desaparecerá automáticamente al actualizarse el snapshot
     } catch (e) { console.error(e); }
 };
 
@@ -115,17 +113,20 @@ window.renderizarTabla = () => {
             <tr class="border-b text-sm hover:bg-slate-50 transition-colors">
                 <td class="px-8 py-4">
                     <div class="flex flex-col gap-1">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-slate-800 text-base">${c.nombre || c.telefono}</span>
-                            ${c.observaciones ? '<i class="fa-solid fa-circle-info text-amber-500 text-[10px]"></i>' : ''}
-                        </div>
-                        <span class="text-[11px] text-indigo-600 font-bold italic">${c.pedido || 'Sin pedido'}</span>
-                        ${c.observaciones ? `<span class="text-[10px] text-slate-400 border-l-2 border-amber-300 pl-2 mt-1 italic">${c.observaciones}</span>` : ''}
+                        <span class="font-bold text-slate-800 text-base">${c.nombre || c.telefono}</span>
+                        <span class="text-[11px] text-indigo-600 font-bold italic leading-tight">${c.pedido || 'Sin pedido'}</span>
                     </div>
+                </td>
+                <td class="px-8 py-4 max-w-[300px]">
+                    ${c.observaciones ? `
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-2 rounded-r-lg">
+                            <p class="text-[11px] text-slate-600 font-medium leading-relaxed italic">${c.observaciones}</p>
+                        </div>
+                    ` : '<span class="text-slate-300 italic text-[10px]">Sin notas</span>'}
                 </td>
                 <td class="px-8 py-4 font-black text-slate-700">$${montoNum.toFixed(2)}</td>
                 <td class="px-8 py-4">
-                    <select onchange="window.cambiarEstado('${c.id}', this.value)" class="p-2 rounded-lg ${colorClase} font-extrabold text-[10px] border-none outline-none shadow-sm">
+                    <select onchange="window.cambiarEstado('${c.id}', this.value)" class="p-2 rounded-lg ${colorClase} font-extrabold text-[10px] border-none outline-none shadow-sm w-full">
                         <option value="Interesado" ${c.estado === 'Interesado' ? 'selected' : ''}>🟡 Interesado</option>
                         <option value="Pendiente" ${c.estado === 'Pendiente' ? 'selected' : ''}>🟠 Pendiente</option>
                         <option value="En Envío" ${c.estado === 'En Envío' ? 'selected' : ''}>🔵 En Envío</option>
@@ -133,12 +134,14 @@ window.renderizarTabla = () => {
                     </select>
                 </td>
                 <td class="px-8 py-4 text-center">
-                    <span class="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-full">${tiempo}</span>
+                    <span class="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-full whitespace-nowrap">${tiempo}</span>
                 </td>
-                <td class="px-8 py-4 flex gap-2 justify-center">
-                    <button onclick="window.abrirEditor('${c.id}')" class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                    <a href="https://wa.me/503${c.telefono}" target="_blank" class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white flex items-center justify-center"><i class="fa-brands fa-whatsapp"></i></a>
-                    <button onclick="window.eliminarCliente('${c.id}')" class="w-8 h-8 bg-red-50 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                <td class="px-8 py-4">
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="window.abrirEditor('${c.id}')" class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                        <a href="https://wa.me/503${c.telefono}" target="_blank" class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white flex items-center justify-center"><i class="fa-brands fa-whatsapp"></i></a>
+                        <button onclick="window.eliminarCliente('${c.id}')" class="w-8 h-8 bg-red-50 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                    </div>
                 </td>
             </tr>`;
     });
@@ -162,11 +165,9 @@ const actualizarNotificaciones = () => {
         const horas = Math.floor(ms / 3600000);
         const dias = Math.floor(horas / 24);
 
-        // Regla 1: Pendiente por más de 24h
         if (c.estado === 'Pendiente' && horas >= 24) {
-            alertas.push({ id: c.id, nombre: c.nombre || c.telefono, msg: `Pendiente hace ${horas}h`, color: 'text-orange-600', icon: 'fa-clock' });
+            alertas.push({ id: c.id, nombre: c.nombre || c.telefono, msg: `Pendiente ${horas}h`, color: 'text-orange-600', icon: 'fa-clock' });
         }
-        // Regla 2: Entregado hace más de 20 días (Re-surtido)
         if (c.estado === 'Entregado' && dias >= 20) {
             alertas.push({ id: c.id, nombre: c.nombre || c.telefono, msg: `Toca re-surtido (${dias}d)`, color: 'text-blue-600', icon: 'fa-arrows-rotate' });
         }
@@ -183,12 +184,9 @@ const actualizarNotificaciones = () => {
     alertas.forEach(a => {
         lista.innerHTML += `
             <div class="p-4 bg-white border-b border-slate-50 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3">
-                    <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                    <div>
-                        <b class="text-[11px] text-slate-800">${a.nombre}</b><br>
-                        <span class="text-[10px] ${a.color} font-black uppercase tracking-tighter italic"><i class="fa-solid ${a.icon} mr-1"></i>${a.msg}</span>
-                    </div>
+                <div>
+                    <b class="text-[11px] text-slate-800">${a.nombre}</b><br>
+                    <span class="text-[10px] ${a.color} font-black uppercase tracking-tighter italic"><i class="fa-solid ${a.icon} mr-1"></i>${a.msg}</span>
                 </div>
                 <button onclick="window.marcarSeguimiento('${a.id}')" class="w-8 h-8 bg-indigo-600 text-white rounded-xl shadow-md hover:scale-110 transition-transform flex items-center justify-center">
                     <i class="fa-solid fa-check text-[10px]"></i>
