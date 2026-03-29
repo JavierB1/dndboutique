@@ -12,7 +12,7 @@ const firebaseConfig = {
   measurementId: "G-PFDWRKEJXQ"
 };
 
-// Inicialización
+// Inicialización de servicios
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const clientesRef = collection(db, "clientes");
@@ -20,7 +20,73 @@ const clientesRef = collection(db, "clientes");
 let clientesGlobal = [];
 let editandoID = null;
 
-// --- FUNCIONES DE UTILIDAD ---
+// --- REGISTRO DE FUNCIONES GLOBALES (Para que el HTML las vea) ---
+// Esto debe ir antes de cualquier otra lógica para asegurar que los botones funcionen siempre.
+
+window.toggleModal = () => {
+    editandoID = null;
+    const form = document.getElementById('form-cliente');
+    if (form) form.reset();
+    
+    const titulo = document.getElementById('modal-titulo');
+    if (titulo) titulo.innerText = "Registrar Venta";
+    
+    const modal = document.getElementById('modalCliente');
+    if (modal) modal.classList.toggle('hidden');
+};
+
+window.toggleNotificaciones = () => {
+    const panel = document.getElementById('panel-notif');
+    if (panel) panel.classList.toggle('hidden');
+};
+
+window.abrirEditor = (id) => {
+    const cliente = clientesGlobal.find(c => c.id === id);
+    if (cliente) {
+        editandoID = id;
+        const titulo = document.getElementById('modal-titulo');
+        if (titulo) titulo.innerText = "Editar Información";
+        
+        const telFormateado = formatearTelefono(cliente.telefono);
+        
+        // Llenado de campos con validación de existencia
+        if(document.getElementById('nombre')) document.getElementById('nombre').value = (cliente.nombre === telFormateado) ? "" : (cliente.nombre || "");
+        if(document.getElementById('telefono')) document.getElementById('telefono').value = cliente.telefono || "";
+        if(document.getElementById('pedido')) document.getElementById('pedido').value = cliente.pedido || "";
+        if(document.getElementById('monto')) document.getElementById('monto').value = (cliente.monto && cliente.monto != 0) ? cliente.monto : "";
+        if(document.getElementById('estado')) document.getElementById('estado').value = cliente.estado || "Interesado";
+        if(document.getElementById('observaciones')) document.getElementById('observaciones').value = cliente.observaciones || "";
+        
+        const modal = document.getElementById('modalCliente');
+        if (modal) modal.classList.remove('hidden');
+    }
+};
+
+window.cambiarEstado = async (id, nuevoEstado) => {
+    try {
+        await updateDoc(doc(db, "clientes", id), {
+            estado: nuevoEstado,
+            fechaCambioEstado: Date.now()
+        });
+    } catch (e) { console.error("Error al cambiar estado:", e); }
+};
+
+window.marcarSeguimiento = async (id) => {
+    try {
+        await updateDoc(doc(db, "clientes", id), { fechaCambioEstado: Date.now() });
+    } catch (e) { console.error("Error en seguimiento:", e); }
+};
+
+window.eliminarCliente = async (id) => {
+    if (confirm('¿Estás seguro de eliminar este registro?')) {
+        try {
+            await deleteDoc(doc(db, "clientes", id));
+        } catch (e) { console.error("Error al eliminar:", e); }
+    }
+};
+
+// --- FUNCIONES DE APOYO ---
+
 const formatearTelefono = (num) => {
     if (!num) return "";
     const s = num.toString().replace(/\s/g, "");
@@ -39,7 +105,8 @@ const obtenerContador = (inicio) => {
     return `${dias}d`;
 };
 
-// --- RENDERIZADO DE TABLA ---
+// --- RENDERIZADO ---
+
 const renderizarTabla = () => {
     const tabla = document.getElementById('tabla-body');
     const buscador = document.getElementById('buscador')?.value.toLowerCase() || "";
@@ -65,7 +132,6 @@ const renderizarTabla = () => {
         const tiempo = obtenerContador(c.fechaCambioEstado);
         const montoMostrar = (montoNum > 0) ? `$${montoNum.toFixed(2)}` : "-";
         
-        // Colores del selector
         const colorClase = 
             c.estado === 'Pendiente' ? 'bg-orange-100 text-orange-700' : 
             c.estado === 'En Envío' ? 'bg-blue-100 text-blue-700' : 
@@ -106,17 +172,20 @@ const renderizarTabla = () => {
             </tr>`;
     });
 
-    // Actualizar Dashboards
-    document.getElementById('count-pendientes').innerText = stats.pendientes;
-    document.getElementById('count-envios').innerText = stats.envios;
-    document.getElementById('total-ventas').innerText = `$${stats.total.toFixed(2)}`;
-    document.getElementById('count-clientes').innerText = stats.socios;
+    // Actualización segura de elementos de UI
+    if(document.getElementById('count-pendientes')) document.getElementById('count-pendientes').innerText = stats.pendientes;
+    if(document.getElementById('count-envios')) document.getElementById('count-envios').innerText = stats.envios;
+    if(document.getElementById('total-ventas')) document.getElementById('total-ventas').innerText = `$${stats.total.toFixed(2)}`;
+    if(document.getElementById('count-clientes')) document.getElementById('count-clientes').innerText = stats.socios;
 };
 
-// --- NOTIFICACIONES ---
+window.renderizarTabla = renderizarTabla;
+
 const actualizarNotificaciones = () => {
     const lista = document.getElementById('lista-notificaciones');
     const badge = document.getElementById('notif-badge');
+    const countText = document.getElementById('notif-count-text');
+    
     if(!lista || !badge) return;
     
     lista.innerHTML = '';
@@ -131,6 +200,12 @@ const actualizarNotificaciones = () => {
 
     badge.innerText = alertas.length;
     badge.classList.toggle('hidden', alertas.length === 0);
+    if(countText) countText.innerText = alertas.length;
+
+    if (alertas.length === 0) {
+        lista.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-4">No hay alertas pendientes</p>';
+    }
+
     alertas.forEach(a => {
         lista.innerHTML += `
             <div class="p-3 bg-white border-b flex justify-between items-center text-[11px]">
@@ -140,7 +215,8 @@ const actualizarNotificaciones = () => {
     });
 };
 
-// --- ESCUCHA DE FIREBASE ---
+// --- ESCUCHA DE DATOS ---
+
 onSnapshot(clientesRef, (snapshot) => {
     clientesGlobal = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     clientesGlobal.sort((a, b) => b.id - a.id);
@@ -148,94 +224,42 @@ onSnapshot(clientesRef, (snapshot) => {
     actualizarNotificaciones();
 });
 
-// --- ACCIONES GLOBALES (VINCULADAS A WINDOW PARA QUE FUNCIONEN LOS BOTONES) ---
-window.toggleModal = () => {
-    editandoID = null;
-    document.getElementById('form-cliente').reset();
-    document.getElementById('modal-titulo').innerText = "Registrar Venta";
-    document.getElementById('modalCliente').classList.toggle('hidden');
-};
+// --- MANEJO DEL FORMULARIO ---
 
-window.toggleNotificaciones = () => {
-    const panel = document.getElementById('panel-notif');
-    panel.classList.toggle('hidden');
-};
-
-window.abrirEditor = (id) => {
-    const cliente = clientesGlobal.find(c => c.id === id);
-    if (cliente) {
-        editandoID = id;
-        document.getElementById('modal-titulo').innerText = "Editar Información";
+const formulario = document.getElementById('form-cliente');
+if (formulario) {
+    formulario.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const ahora = Date.now();
+        const idFinal = editandoID || ahora.toString();
         
-        const telFormateado = formatearTelefono(cliente.telefono);
-        document.getElementById('nombre').value = (cliente.nombre === telFormateado) ? "" : (cliente.nombre || "");
-        document.getElementById('telefono').value = cliente.telefono || "";
-        document.getElementById('pedido').value = cliente.pedido || "";
-        document.getElementById('monto').value = (cliente.monto && cliente.monto != 0) ? cliente.monto : "";
-        document.getElementById('estado').value = cliente.estado || "Interesado";
-        document.getElementById('observaciones').value = cliente.observaciones || "";
+        const telRaw = document.getElementById('telefono').value.trim();
+        const nombreInput = document.getElementById('nombre').value.trim();
+        const nombreFinal = nombreInput || formatearTelefono(telRaw);
         
-        document.getElementById('modalCliente').classList.remove('hidden');
-    }
-};
+        const montoVal = document.getElementById('monto').value;
+        const montoFinal = montoVal ? parseFloat(montoVal).toFixed(2) : 0;
 
-window.cambiarEstado = async (id, nuevoEstado) => {
-    try {
-        await updateDoc(doc(db, "clientes", id), {
-            estado: nuevoEstado,
-            fechaCambioEstado: Date.now()
-        });
-    } catch (e) { console.error(e); }
-};
+        const datos = {
+            nombre: nombreFinal,
+            telefono: telRaw,
+            pedido: document.getElementById('pedido').value.trim(),
+            monto: montoFinal,
+            estado: document.getElementById('estado').value,
+            observaciones: document.getElementById('observaciones').value.trim()
+        };
 
-window.marcarSeguimiento = async (id) => {
-    try {
-        await updateDoc(doc(db, "clientes", id), { fechaCambioEstado: Date.now() });
-    } catch (e) { console.error(e); }
-};
+        if (!editandoID) datos.fechaCambioEstado = ahora;
 
-window.eliminarCliente = async (id) => {
-    if (confirm('¿Eliminar este registro para todos los dispositivos?')) {
         try {
-            await deleteDoc(doc(db, "clientes", id));
-        } catch (e) { console.error(e); }
-    }
-};
+            await setDoc(doc(db, "clientes", idFinal), datos, { merge: true });
+            window.toggleModal();
+        } catch (err) {
+            console.error("Error al guardar:", err);
+            alert("Error al guardar. Verifica tu conexión.");
+        }
+    });
+}
 
-window.renderizarTabla = renderizarTabla; // Para el buscador y filtros
-
-// --- ENVÍO DEL FORMULARIO ---
-document.getElementById('form-cliente').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const ahora = Date.now();
-    const idFinal = editandoID || ahora.toString();
-    
-    const telRaw = document.getElementById('telefono').value.trim();
-    const nombreInput = document.getElementById('nombre').value.trim();
-    const nombreFinal = nombreInput || formatearTelefono(telRaw);
-    
-    const montoVal = document.getElementById('monto').value;
-    const montoFinal = montoVal ? parseFloat(montoVal).toFixed(2) : 0;
-
-    const datos = {
-        nombre: nombreFinal,
-        telefono: telRaw,
-        pedido: document.getElementById('pedido').value.trim(),
-        monto: montoFinal,
-        estado: document.getElementById('estado').value,
-        observaciones: document.getElementById('observaciones').value.trim()
-    };
-
-    if (!editandoID) datos.fechaCambioEstado = ahora;
-
-    try {
-        await setDoc(doc(db, "clientes", idFinal), datos, { merge: true });
-        window.toggleModal();
-    } catch (err) {
-        console.error("Error al guardar:", err);
-        alert("Error de conexión. Revisa tus reglas de Firebase.");
-    }
-});
-
-// Refresco visual de tiempos cada minuto
+// Actualización automática de contadores de tiempo
 setInterval(() => renderizarTabla(), 60000);
