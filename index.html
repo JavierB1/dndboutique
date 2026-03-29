@@ -10,8 +10,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <!-- Estilos Personalizados -->
-    <link rel="stylesheet" href="css/index.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-900">
 
@@ -43,7 +44,7 @@
         </div>
     </nav>
 
-    <main class="p-4 md:p-8 max-w-7xl mx-auto">
+    <main class="p-4 md:p-8 max-w-[1400px] mx-auto">
         <!-- Indicadores de Resumen -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm border-l-4 border-l-orange-400">
@@ -75,15 +76,16 @@
                 </select>
                 <div class="relative w-full md:w-72">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400 text-sm"></i>
-                    <input type="text" id="buscador" onkeyup="window.renderizarTabla()" placeholder="Buscar socio u observación..." class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 ring-indigo-50 font-medium">
+                    <input type="text" id="buscador" onkeyup="window.renderizarTabla()" placeholder="Buscar socio, pedido o notas..." class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 ring-indigo-50 font-medium">
                 </div>
             </div>
             
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
+                <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="text-slate-400 text-[10px] uppercase tracking-widest border-b border-slate-50 font-black">
                             <th class="px-8 py-5">Socio / Pedido</th>
+                            <th class="px-8 py-5">Observaciones</th>
                             <th class="px-8 py-5">Monto</th>
                             <th class="px-8 py-5">Estado</th>
                             <th class="px-8 py-5 text-center">Último Mov.</th>
@@ -91,14 +93,14 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-body" class="divide-y divide-slate-50 text-sm font-medium">
-                        <!-- Los datos se cargan desde JS -->
+                        <!-- JS Load -->
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <!-- Modal de Registro/Edición -->
+    <!-- Modal Form -->
     <div id="modalCliente" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-md flex items-center justify-center p-4 z-[100]">
         <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6">
@@ -107,12 +109,12 @@
             </div>
             <form id="form-cliente" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="nombre" placeholder="Nombre (Opcional)" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none">
-                    <input type="number" id="telefono" placeholder="WhatsApp (Ej: 77889900)" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none" required>
+                    <input type="text" id="nombre" placeholder="Nombre" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none">
+                    <input type="number" id="telefono" placeholder="WhatsApp" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none" required>
                 </div>
-                <textarea id="pedido" rows="2" placeholder="Detalles del pedido (aromas, cantidades...)" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none"></textarea>
+                <textarea id="pedido" rows="2" placeholder="Detalles del pedido..." class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none"></textarea>
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="number" step="0.01" id="monto" placeholder="Monto $" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none font-bold text-indigo-600">
+                    <input type="number" step="0.01" id="monto" placeholder="Monto $" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 outline-none font-bold">
                     <select id="estado" class="w-full p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-indigo-500 font-bold outline-none">
                         <option value="Interesado">🟡 Interesado</option>
                         <option value="Pendiente">🟠 Pendiente</option>
@@ -120,14 +122,13 @@
                         <option value="Entregado">🟢 Entregado</option>
                     </select>
                 </div>
-                <textarea id="observaciones" rows="2" placeholder="Notas internas (ej: No responde, espera pago...)" class="w-full p-4 bg-amber-50/50 rounded-2xl border-2 border-transparent focus:border-amber-400 outline-none italic text-slate-600"></textarea>
+                <textarea id="observaciones" rows="2" placeholder="Notas internas / Observaciones..." class="w-full p-4 bg-amber-50/30 rounded-2xl border-2 border-transparent focus:border-amber-400 outline-none italic"></textarea>
                 
                 <button type="submit" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest active:scale-95">GUARDAR REGISTRO</button>
             </form>
         </div>
     </div>
 
-    <!-- Carga del script principal -->
     <script src="js/index.js" type="module"></script>
 </body>
 </html>
